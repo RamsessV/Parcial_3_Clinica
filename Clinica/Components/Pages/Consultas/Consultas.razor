@@ -1,0 +1,133 @@
+﻿@page "/consultas"
+@using Clinica.Data
+@using Clinica.Repositories.Consultas
+@using Clinica.Repositories.Doctores
+@using Clinica.Repositories.Pacientes
+@rendermode InteractiveServer
+@inject NavigationManager _navigationManager
+@inject IRepositorioConsultas _repositorioConsultas
+@inject IRepositorioDoctores _repositorioDoctores
+@inject IRepositorioPacientes _repositorioPacientes
+
+
+<h2>Bienvenido al centro de control de consultas</h2>
+
+@if (_consultas == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (_consultas.Count() == 0)
+{
+    <h6>No hay consultas registradas.</h6>
+}
+else
+{
+    <InputRadioGroup @bind-Value="_filtro" class="mb-2" @onchange="Check">
+        <label class="form-label">Filtrar por:</label>
+        <div class="form-check">
+            <InputRadio class="form-check-input" id="opcion1" Value="@("t")" />
+            <label class="form-check-label" for="opcion1">Todos</label>
+        </div>
+        <div class="form-check">
+            <InputRadio class="form-check-input" id="opcion2" Value="@("d")" />
+            <label class="form-check-label" for="opcion2">Doctor</label>
+        </div>
+        <div class="form-check">
+            <InputRadio class="form-check-input" id="opcion3" Value="@("p")" />
+            <label class="form-check-label" for="opcion3">Paciente</label>
+        </div>
+    </InputRadioGroup>
+
+    @if(_filtro != "t")
+    {
+        <div class="mb-3">
+            <label for="txtBusqueda" class="form-label">@(_filtro == "d" ? "Ingresa el nombre del doctor" : "Ingresa el nombre del paciente")</label>
+            <InputText id="txtBusqueda" class="form-control" @bind-Value="_busqueda"></InputText>
+        </div>
+        <button type="button" class="btn btn-secondary" @onclick=Filtrar>Buscar</button>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Paciente</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Motivo</th>
+                <th>Doctor</th>
+                <th>Consultorio</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (Consulta consulta in _consultas)
+            {
+                <tr>
+                    <td>@consulta.Paciente.Nombre</td>
+                    <td>@consulta.Fecha</td>
+                    <td>@consulta.Hora</td>
+                    <td>@consulta.Motivo</td>
+                    <td>@consulta.Doctor.Nombre</td>
+                    <td>@consulta.Doctor.Consultorio</td>
+                    <td>
+                        <button class="btn btn-danger" @onclick="()=>Delete(consulta)" title="Eliminar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+                                <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5" />
+                            </svg>
+                        </button>
+                        <button class="btn btn-secondary" @onclick="()=>Update(consulta)" title="Modificar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325" />
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+@code {
+    private List<Consulta>? _consultas;
+    private string _filtro = "t";
+    private string _busqueda;
+
+    private async Task Filtrar()
+    {
+        if(_filtro == "d")
+        {
+            Doctor doctor = await _repositorioDoctores.GetByName(_busqueda);
+            _consultas = doctor.Consultas;
+        } else
+        {
+            Paciente paciente = await _repositorioPacientes.GetByName(_busqueda);
+            _consultas = paciente.Consultas;
+        } 
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _consultas = await _repositorioConsultas.GetAll();
+    }
+
+    private async Task Check()
+    {
+        if(_filtro == "t")
+        {
+            _consultas = await _repositorioConsultas.GetAll();
+            StateHasChanged();
+        }
+    }
+
+    private async Task Delete(Consulta consulta)
+    {
+        await _repositorioConsultas.Delete(consulta.Id);
+        _consultas = await _repositorioConsultas.GetAll();
+    }
+
+    private void Update(Consulta consulta)
+    {
+        _navigationManager.NavigateTo($"/consultas/editar/{consulta.Id}");
+    }
+}

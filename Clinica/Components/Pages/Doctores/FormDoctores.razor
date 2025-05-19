@@ -1,0 +1,94 @@
+﻿@page "/doctores/agregar"
+@page "/doctores/editar/{id:int}"
+@rendermode InteractiveServer
+@using Clinica.Repositories.Doctores
+@inject IRepositorioDoctores _repositorioDoctores
+@inject NavigationManager _navigationManager
+@using Clinica.Data
+
+
+<h3>@(_editando ? "Actualizar doctor" : "Nuevo doctor")</h3>
+<EditForm Model="_doctor" FormName="frmDoctor" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <div class="mb-3 row">
+        <label for="txtNombre" class="col-sm-2 col-form-label">Nombre</label>
+        <div class="col-sm-10">
+            <InputText class="form-control" id="txtNombre" @bind-Value="_doctor.Nombre" />
+            <ValidationMessage For="()=>_doctor.Nombre" />
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="selectEspecialidad" class="col-sm-2 col-form-label">Especialidad</label>
+        <div class="col-sm-10">
+            <select class="form-control" id="selectEspecialidad" @bind="_doctor.Especialidad">
+                <option disabled selected value="">Seleccione una especialidad</option>
+                <option value="Medicina General">Medicina General</option>
+                <option value="Pediatría">Pediatría</option>
+                <option value="Ginecología">Ginecología</option>
+                <option value="Cardiología">Cardiología</option>
+                <option value="Dermatología">Dermatología</option>
+            </select>
+            <ValidationMessage For="()=>_doctor.Especialidad" />
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="numberConsultorio" class="col-sm-2 col-form-label">Consultorio</label>
+        <div class="col-sm-10">
+            <InputNumber class="form-control" id="txtNombre" @bind-Value="_doctor.Consultorio" />
+            <ValidationMessage For="()=>_doctor.Consultorio" />
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="txtCorreo" class="col-sm-2 col-form-label">Correo</label>
+        <div class="col-sm-10">
+            <InputText class="form-control" id="txtCorreo" @bind-Value="_doctor.Correo" />
+            <ValidationMessage For="()=>_doctor.Correo" />
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="txtTelefono" class="col-sm-2 col-form-label">Teléfono</label>
+        <div class="col-sm-10">
+            <InputText class="form-control" id="txtTelefono" @bind-Value="_doctor.Telefono" />
+            <ValidationMessage For="()=>_doctor.Telefono" />
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <button type="button" class="btn btn-danger" @onclick="Cancelar">Cancelar</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+    private Doctor _doctor = new();
+    private bool _editando = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (id > 0)
+        {
+            _editando = true;
+            _doctor = await _repositorioDoctores.Get(id);
+        }
+    }
+
+    private async Task Guardar()
+    {
+        if (_editando)
+        {
+            _doctor.Id = id;
+            await _repositorioDoctores.Update(_doctor);
+        }
+        else
+        {
+            await _repositorioDoctores.Add(_doctor);
+        }
+        Cancelar();
+    
+    }
+
+    private void Cancelar()
+    {
+        _navigationManager.NavigateTo("/doctores");
+    }
+}

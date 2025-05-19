@@ -1,0 +1,111 @@
+﻿@page "/consultas/agregar/{pId:int}"
+@page "/consultas/editar/{id:int}"
+@rendermode InteractiveServer
+@using Clinica.Repositories.Consultas
+@using Clinica.Repositories.Doctores
+@using Clinica.Repositories.Pacientes
+@inject IRepositorioDoctores _repositorioDoctores
+@inject IRepositorioConsultas _repositorioConsultas
+@inject IRepositorioPacientes _repositorioPacientes
+@inject NavigationManager _navigationManager
+@using Clinica.Data
+
+
+<h3>@(_editando ? $"Actualizar consulta de {_paciente.Nombre}" : $"Nueva consulta para {_paciente.Nombre}")</h3>
+<EditForm Model="_consulta" FormName="frmConsulta" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <div class="mb-3 row">
+        <label for="txtMotivo" class="col-sm-2 col-form-label">Motivo</label>
+        <div class="col-sm-10">
+            <InputText class="form-control" id="txtMotivo" @bind-Value="_consulta.Motivo" />
+            <ValidationMessage For="() => _consulta.Motivo" />
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="inputFecha" class="col-sm-2 col-form-label">Fecha</label>
+        <div class="col-sm-10">
+            <InputDate class="form-control" id="inputFecha" @bind-Value="_consulta.Fecha" />
+            <ValidationMessage For="() => _consulta.Fecha" />
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="inputHora" class="col-sm-2 col-form-label">Hora</label>
+        <div class="col-sm-10">
+            <input type="time" class="form-control" id="inputHora" @oninput="OnHoraInput" />
+            <ValidationMessage For="() => _consulta.Hora" />
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="selectDoctor" class="col-sm-2 col-form-label">Doctor</label>
+        <div class="col-sm-10">
+            <InputSelect class="form-control" id="selectDoctor" @bind-Value="_consulta.DoctorId">
+                <option value="">Seleccione un doctor</option>
+                @foreach (Doctor doctor in _doctores)
+                {
+                    <option value="@doctor.Id">@doctor.Nombre</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => _consulta.DoctorId" />
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <button type="button" class="btn btn-danger" @onclick="Cancelar">Cancelar</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+    [Parameter]
+    public int pId { set; get; }
+    private Consulta _consulta = new() {DoctorId = null, Fecha = null, Hora = null};
+    private bool _editando = false;
+    private Paciente _paciente = new();
+
+    private string? _horaString;
+    private void OnHoraInput(ChangeEventArgs e)
+    {
+        _horaString = e.Value?.ToString();
+        if (TimeSpan.TryParse(_horaString, out var hora))
+        {
+            _consulta.Hora = hora;
+        }
+    }
+
+    private List<Doctor> _doctores = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (id > 0)
+        {
+            _editando = true;
+            _consulta = await _repositorioConsultas.Get(id);
+            _paciente = await _repositorioPacientes.Get(_consulta.PacienteId);
+        } else
+        {
+            _paciente = await _repositorioPacientes.Get(pId);
+            _consulta.PacienteId = _paciente.Id;
+        }
+        _doctores = await _repositorioDoctores.GetAll();
+    }
+
+    private async Task Guardar()
+    {
+        if (_editando)
+        {
+            _consulta.Id = id;
+            await _repositorioConsultas.Update(_consulta);
+        }
+        else
+        {
+            await _repositorioConsultas.Add(_consulta);
+        }
+        Cancelar();
+
+    }
+
+    private void Cancelar()
+    {
+        _navigationManager.NavigateTo("/consultas");
+    }
+}
