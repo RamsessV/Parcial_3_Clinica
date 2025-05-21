@@ -6,9 +6,9 @@ namespace Clinica.Repositories.Pacientes
     {
         Task<List<Paciente>> GetAll();
         Task<Paciente> Get(int id);
-        Task<Paciente> GetByName(string name);
         Task Add(Paciente paciente);
         Task Delete(int id);
         Task Update(Paciente paciente);
+        Task<bool> CanDelete(int id);
     }
 }

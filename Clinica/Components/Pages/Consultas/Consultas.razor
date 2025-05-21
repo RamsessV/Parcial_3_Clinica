@@ -1,28 +1,29 @@
 ﻿@page "/consultas"
 @using Clinica.Data
 @using Clinica.Repositories.Consultas
-@using Clinica.Repositories.Doctores
-@using Clinica.Repositories.Pacientes
 @rendermode InteractiveServer
 @inject NavigationManager _navigationManager
 @inject IRepositorioConsultas _repositorioConsultas
-@inject IRepositorioDoctores _repositorioDoctores
-@inject IRepositorioPacientes _repositorioPacientes
 
 
 <h2>Bienvenido al centro de control de consultas</h2>
 
-@if (_consultas == null)
+@if (!_found)
 {
-    <p><em>Cargando...</em></p>
+    <div class="alert alert-danger">El @(_filtro == "d" ? "Doctor " : "Paciente ") @_busqueda no ha sido encontrado</div>
+    <button class="btn btn-dark" @onclick="() => {_found = true; _consultas = _consultasOriginal.ToList();}">Volver</button>
+}
+else if(_consultas == null)
+{
+    <div>Cargando...</div>
 }
 else if (_consultas.Count() == 0)
 {
     <h6>No hay consultas registradas.</h6>
 }
-else
+else 
 {
-    <InputRadioGroup @bind-Value="_filtro" class="mb-2" @onchange="Check">
+    <InputRadioGroup @bind-value="_filtro" class="mb-2">
         <label class="form-label">Filtrar por:</label>
         <div class="form-check">
             <InputRadio class="form-check-input" id="opcion1" Value="@("t")" />
@@ -90,36 +91,47 @@ else
 
 @code {
     private List<Consulta>? _consultas;
-    private string _filtro = "t";
-    private string _busqueda;
+    private List<Consulta>? _consultasOriginal;
+    private string _filtroBackingField = "t";  // campo privado real con valor inicial
 
-    private async Task Filtrar()
+    private string _filtro
+    {
+        get => _filtroBackingField;
+        set
+        {
+            if (_filtroBackingField != value)
+            {
+                _filtroBackingField = value;
+
+                if (_filtroBackingField == "t")
+                {
+                    _consultas = _consultasOriginal.ToList();
+                }
+            }
+        }
+    }
+    private string _busqueda;
+    private bool _found = true;
+
+    private void Filtrar()
     {
         if(_filtro == "d")
         {
-            Doctor doctor = await _repositorioDoctores.GetByName(_busqueda);
-            _consultas = doctor.Consultas;
+            _consultas = _consultasOriginal.Where(c => c.Doctor.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)).ToList();
         } else
         {
-            Paciente paciente = await _repositorioPacientes.GetByName(_busqueda);
-            _consultas = paciente.Consultas;
+            _consultas = _consultasOriginal.Where(c => c.Paciente.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)).ToList();
         } 
+        _found = _consultas.Count() > 0;
     }
 
     protected override async Task OnInitializedAsync()
     {
         _consultas = await _repositorioConsultas.GetAll();
+        _consultasOriginal = _consultas.ToList();
     }
 
-    private async Task Check()
-    {
-        if(_filtro == "t")
-        {
-            _consultas = await _repositorioConsultas.GetAll();
-            StateHasChanged();
-        }
-    }
-
+    
     private async Task Delete(Consulta consulta)
     {
         await _repositorioConsultas.Delete(consulta.Id);

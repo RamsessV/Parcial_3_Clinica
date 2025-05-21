@@ -8,6 +8,11 @@
 <h2>Bienvenido al centro de control de pacientes</h2>
 <a href="/pacientes/agregar" class="btn btn-primary mb-1">Agregar un paciente</a>
 
+@if (_error)
+{
+    <div class="alert alert-danger">No se puede borrar al paciente, debido a que tiene consultas asignadas</div>
+}
+
 @if (_pacientes == null)
 {
     <p><em>Cargando...</em></p>
@@ -56,6 +61,7 @@ else
 
 @code {
     private List<Paciente>? _pacientes;
+    private bool _error = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -65,8 +71,17 @@ else
 
     private async Task Delete(Paciente paciente)
     {
-        await _repositorioPacientes.Delete(paciente.Id);
-        _pacientes = await _repositorioPacientes.GetAll();
+        if(await _repositorioPacientes.CanDelete(paciente.Id))
+        {
+            await _repositorioPacientes.Delete(paciente.Id);
+            _error = false;
+            _pacientes = await _repositorioPacientes.GetAll();
+        } 
+        else
+        {
+            _error = true;
+        }
+
     }
 
     private void Update(Paciente paciente)

@@ -7,6 +7,10 @@
 
 <h2>Bienvenido al centro de control de doctores</h2>
 <a href="/doctores/agregar" class="btn btn-primary mb-1">Agregar un doctor</a>
+@if(_error)
+{
+    <div class="alert alert-danger">No se puede borrar al doctor, debido a que tiene consultas asignadas</div>
+}
 
 @if (_doctores == null)
 {
@@ -59,6 +63,7 @@ else
 
 @code {
     private List<Doctor>? _doctores;
+    private bool _error = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -68,13 +73,23 @@ else
 
     private async Task Delete(Doctor doctor)
     {
-        await _repositorioDoctores.Delete(doctor.Id);
-        _doctores = await _repositorioDoctores.GetAll();
+        bool delete = await _repositorioDoctores.CanDelete(doctor.Id);
+        if (delete)
+        {
+            await _repositorioDoctores.Delete(doctor.Id);
+            _doctores = await _repositorioDoctores.GetAll();
+            _error = false;
+        }
+        else
+        {
+            _error = true;
+        }
     }
 
     private void Update(Doctor doctor)
     {
         _navigationManager.NavigateTo($"/doctores/editar/{doctor.Id}");
+
     }
 }
 

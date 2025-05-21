@@ -17,6 +17,12 @@ namespace Clinica.Repositories.Pacientes
             await _context.SaveChangesAsync();
         }
 
+        public async Task<bool> CanDelete(int id)
+        {
+            Paciente p = await _context.Pacientes.Include(p => p.Consultas).SingleAsync(p => p.Id == id);
+            return p.Consultas.Count() == 0;
+        }
+
         public async Task Delete(int id)
         {
             await _context.Database.ExecuteSqlRawAsync("DELETE FROM Pacientes WHERE Id = {0}", id);
@@ -24,12 +30,7 @@ namespace Clinica.Repositories.Pacientes
 
         public async Task<Paciente> Get(int id)
         {
-            return await _context.Pacientes.FindAsync(id);
-        }
-
-        public async Task<Paciente> GetByName(string name)
-        {
-            return await _context.Pacientes.Include(p => p.Consultas).ThenInclude(c => c.Doctor).SingleOrDefaultAsync(p => p.Nombre.ToLower() == name.ToLower());
+            return await _context.Pacientes.Include(p => p.Consultas).SingleAsync(p => p.Id == id);
         }
 
         public async Task<List<Paciente>> GetAll()

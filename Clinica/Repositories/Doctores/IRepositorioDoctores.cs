@@ -6,10 +6,10 @@ namespace Clinica.Repositories.Doctores
     {
         Task<List<Doctor>> GetAll();
         Task<Doctor> Get(int id);
-        Task<Doctor> GetByName(string name);
         Task Add(Doctor doctor);
         Task Delete(int id);
         Task Update(Doctor doctor);
+        Task<bool> CanDelete(int id);
 
     }
 }
